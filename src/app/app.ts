@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MandelbrotFractal } from './scripts/mandelbrot';
-import { getPixelArray, IFlag } from './scripts/util';
+import { IFlag } from './scripts/util';
+import { IWorkerEventModel, IWorkerResponseModel } from './scripts/mandelbrot_worker';
 
 interface IAppModel {
   centerX : number,
@@ -32,6 +32,9 @@ export class App {
   /** App model - previous state for comparison */
   private appModelOld : IAppModel = {...this.appModel}
 
+  /** Active web workers for cancellation */
+  private workers : Worker[] = [];
+
   /**
    * App start
    */
@@ -56,17 +59,24 @@ export class App {
       return;
     }
 
+    //Terminate workers, store current model data as old.
+    this.workers.forEach(w => w.terminate());
+    this.workers = [];
     this.appModelOld = {...this.appModel};
-
-    //Abort all other processes
-    this.processAborts.forEach(a => a.value = true);
 
     //Render canvas
     var canvas = document.getElementById('canvas') as HTMLCanvasElement;
     if (canvas.getContext) {
       var ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-      this.renderMandelbrot2(ctx, canvas.width, canvas.height);
+      /** Inverse power of pixel size for the mandelbrot render */
+      var power = 6;
+
+      this.renderMandelbrot2(
+        ctx, 
+        canvas.width, 
+        canvas.height,
+        power);
     }
   }
 
@@ -77,59 +87,45 @@ export class App {
   *   @param height Height of canvas
   *   @returns Promise.
   */
-  private async renderMandelbrot2(
+  private renderMandelbrot2(
     ctx: CanvasRenderingContext2D, 
     width : number, 
-    height : number): Promise<void> {
-
-    /** Inverse power of pixel size for the mandelbrot render */
-    var power = 6;
+    height : number,
+    power : number) {
+    
     /** Pixel size for the mandelbrot render */
     var pixelSize = Math.floor(width / 2**power);
-    /** Index of abort flag for this mandelbrot process. */
-    var abortIndex = this.processAborts.push({value : false}) - 1;
 
-    //Stop rendering when pixels are 1x1
-    while(pixelSize >= 1) {
-
-      //Pixel steps
-      var pixelArray = getPixelArray(width, pixelSize);
-
-      //2D Loop for (x, y) pixel coordinates
-      //Vertical loop
-      for(var j = 0; j < pixelArray.length - 1; j++) {
-        var y = pixelArray[j];
-        var pixelHeight = pixelArray[j + 1] - pixelArray[j]
-
-        //Horizontal loop
-        for(var i = 0; i < pixelArray.length - 1; i++) {
-          var x = pixelArray[i];
-          var pixelWidth = pixelArray[i + 1] - pixelArray[i]
-
-          /** Result of mandelbrot calculation */
-          var result = MandelbrotFractal(
-            (x / width - 0.5) * 2 / this.appModel.zoom - 0.5 - this.appModel.centerX, 
-            (y / height - 0.5) * 2 / this.appModel.zoom + this.appModel.centerY,
-            100); // 100 * this.appModel.zoom);
-          
-          /** Shade of pixel based on mandelbrot calculation result */
-          var shade = result < 0 ? 12 : Math.max(255 - result / 100 * 255, 0);
-
-          //Stop rendering if abort has been triggered
-          if(this.processAborts[abortIndex].value) {
-            return;
-          }
-
-          //Draw pixel
-          ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-          ctx.fillRect(x, y, pixelWidth, pixelHeight);
-        }
-      }
-
-      //Reduce pixel size by another power.
-      power++;
-      pixelSize = Math.floor(width / 2**power);
-      await new Promise(resolve => setTimeout(resolve, 0));
+    /** Stop if pixels are smaller than 1x1. */
+    if (pixelSize < 1) {
+      return;
     }
+
+    /** Mandebrot worker */
+    var worker = new Worker(new URL("scripts/mandelbrot_worker.ts", import.meta.url))
+
+    this.workers.push(worker);
+
+    worker.postMessage({
+      width     : width,
+      height    : height,
+      centerX   : this.appModel.centerX,
+      centerY   : this.appModel.centerY,
+      pixelSize : pixelSize,
+      zoom      : this.appModel.zoom
+    } as IWorkerEventModel);
+
+    worker.onmessage = (event) => {
+      (event.data as IWorkerResponseModel[]).forEach(r => {
+          ctx.fillStyle = `rgb(${r.shade},${r.shade},${r.shade})`;
+          ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
+      });
+
+      this.renderMandelbrot2(
+        ctx,
+        width,
+        height,
+        power + 1)
+    };
   }
 }
