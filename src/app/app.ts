@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IFlag } from './scripts/util';
+import { hsvToRgb, IFlag } from './scripts/util';
 import { IWorkerEventModel, IWorkerResponseModel } from './scripts/mandelbrot_worker';
 
 interface IAppModel {
@@ -117,7 +117,13 @@ export class App {
 
     worker.onmessage = (event) => {
       (event.data as IWorkerResponseModel[]).forEach(r => {
-          ctx.fillStyle = `rgb(${r.shade},${r.shade},${r.shade})`;
+
+          var hue = 1 / 10 + r.result / 50;
+
+          ctx.fillStyle = hsvToRgb(
+            hue, 
+            1 - r.result / 500,
+            r.result < 0 ? 0 : 1 - r.result / 100);
           ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
       });
 

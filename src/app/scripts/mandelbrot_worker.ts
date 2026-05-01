@@ -17,7 +17,7 @@ export interface IWorkerResponseModel {
     x2 : number,
     y1 : number,
     y2 : number,
-    shade : number
+    result : number
 }
 
 /** Worker */
@@ -48,9 +48,6 @@ wctx.addEventListener("message", (event) => {
             (x / data.width - 0.5) * 2 / data.zoom - 0.5 - data.centerX, 
             (y / data.height - 0.5) * 2 / data.zoom + data.centerY,
             100 * ((data.zoom - 1) / 64 + 1));
-            
-            /** Shade of pixel based on mandelbrot calculation result */
-            var shade = result < 0 ? 12 : Math.max(255 - result / 100 * 255, 0);
 
             /** Add pixel to results */
             results.push({
@@ -58,7 +55,7 @@ wctx.addEventListener("message", (event) => {
                 x2: pixelWidth,
                 y1: y,
                 y2: pixelHeight,
-                shade: shade
+                result: result
             });
         }
     }
