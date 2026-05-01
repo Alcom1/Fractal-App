@@ -118,11 +118,11 @@ export class App {
     worker.onmessage = (event) => {
       (event.data as IWorkerResponseModel[]).forEach(r => {
 
-          var hue = 1 / 10 + r.result / 50;
+          var hue = 1 - r.result / 100;
 
           ctx.fillStyle = hsvToRgb(
             hue, 
-            1 - r.result / 500,
+            Math.min(1, r.result / 5 - 1),
             r.result < 0 ? 0 : 1 - r.result / 100);
           ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
       });

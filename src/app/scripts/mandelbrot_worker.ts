@@ -47,7 +47,7 @@ wctx.addEventListener("message", (event) => {
             var result = MandelbrotFractal(
             (x / data.width - 0.5) * 2 / data.zoom - 0.5 - data.centerX, 
             (y / data.height - 0.5) * 2 / data.zoom + data.centerY,
-            100 * ((data.zoom - 1) / 64 + 1));
+            200 * ((data.zoom - 1) / 64 + 1));
 
             /** Add pixel to results */
             results.push({

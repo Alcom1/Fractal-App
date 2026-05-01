@@ -22,7 +22,12 @@ export default class Complex implements IComplex {
 
     // Returns the absolute value of this complex number
     public get abs() : number {
-        return Math.sqrt(this.a**2 + this.b**2)
+        return Math.sqrt(this.absSquared);
+    }
+
+    // Returns the squared absolute value of this complex number
+    public get absSquared() : number {
+        return this.a**2 + this.b**2
     }
 
     // Returns this complex number added to another

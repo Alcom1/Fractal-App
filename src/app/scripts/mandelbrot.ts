@@ -16,11 +16,15 @@ export function MandelbrotFractal(x : number, y : number, iterations: number = 1
     function mandelbrotRecurse(z : Complex) : number {
 
         //OOB
-        if(z.abs > 2) {
+        if(z.absSquared > 4) {
             return i;
         }
         //Maximum iterations reached
         if(i >= iterations) {
+            return -1;
+        }
+        //Inside main cardioid
+        if((8 * c.absSquared - 1.5)**2 + 8 * x < 3) {
             return -1;
         }
 
