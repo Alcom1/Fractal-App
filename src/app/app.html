@@ -2,22 +2,28 @@
   <div class="content">
     <div class="side-container">
       <div>
-        <div class="slider-data slider-data-vert">{{appModel.centerY.toFixed(2)}}</div>
+        <div class="slider-data slider-data-vert">{{aMMandel.centerY.toFixed(2)}}</div>
         <div class="slider-data slider-data-vert slider-label-vert">y-center</div>
       </div>
-      <input type="range" id="slider-yaxis" min="-1" max="1" step="any" [(ngModel)]="appModel.centerY" (ngModelChange)="sliderChanged()"/>
+      <input type="range" id="slider-yaxis" min="-1" max="1" step="any" [(ngModel)]="aMMandel.centerY" (ngModelChange)="sliderChanged()"/>
     </div>
     <canvas id="canvas" width="800" height="800"></canvas>
+    <div class="marker-container">
+      @for (item of aMCursor.calcs; track $index) {
+        <div class="marker" [style.left.px]="item.x" [style.top.px]="item.y"></div>
+      }
+    </div>
+    <div class="marker-ui" (mousemove)="MouseMove($event)"></div>
     <div class="side-container"></div>
   </div>
   <div class="content">
     <div class="slider-data slider-data-horz">x-center</div>
-    <input type="range" id="slider-xaxis" min="-1" max="1" step="any" [(ngModel)]="appModel.centerX" (ngModelChange)="sliderChanged()"/>
-    <div class="slider-data slider-data-horz slider-number-horz">{{appModel.centerX.toFixed(2)}}</div>
+    <input type="range" id="slider-xaxis" min="-1" max="1" step="any" [(ngModel)]="aMMandel.centerX" (ngModelChange)="sliderChanged()"/>
+    <div class="slider-data slider-data-horz slider-number-horz">{{aMMandel.centerX.toFixed(2)}}</div>
   </div>
   <div class="content">
     <div class="slider-data slider-data-horz">zoom</div>
-    <input type="range" id="slider-xaxis" min="1" max="50" step="any" [(ngModel)]="appModel.zoom" (ngModelChange)="sliderChanged()"/>
-    <div class="slider-data slider-data-horz slider-number-horz">{{appModel.zoom.toFixed(2)}}</div>
+    <input type="range" id="slider-xaxis" min="1" max="50" step="any" [(ngModel)]="aMMandel.zoom" (ngModelChange)="sliderChanged()"/>
+    <div class="slider-data slider-data-horz slider-number-horz">{{aMMandel.zoom.toFixed(2)}}</div>
   </div>
 </main>

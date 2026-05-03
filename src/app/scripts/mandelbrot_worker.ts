@@ -45,7 +45,7 @@ wctx.addEventListener("message", (event) => {
 
             /** Result of mandelbrot calculation */
             var result = MandelbrotFractal(
-            (x / data.width - 0.5) * 2 / data.zoom - 0.5 - data.centerX, 
+            (x / data.width - 0.5) * 2 / data.zoom - data.centerX, 
             (y / data.height - 0.5) * 2 / data.zoom + data.centerY,
             200 * ((data.zoom - 1) / 64 + 1));
 

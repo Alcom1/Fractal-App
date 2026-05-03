@@ -2,11 +2,18 @@ import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { hsvToRgb, IFlag } from './scripts/util';
 import { IWorkerEventModel, IWorkerResponseModel } from './scripts/mandelbrot_worker';
+import { MandelbrotSequence } from './scripts/mandelbrot';
 
-interface IAppModel {
+interface IAMMandel {
   centerX : number,
   centerY : number,
   zoom : number
+}
+
+interface IAMCursor {
+  x : number,
+  y : number,
+  calcs : {x : number, y : number}[]
 }
 
 @Component({
@@ -22,15 +29,22 @@ export class App {
   /** Abort flags for mandelbrot render processes */
   private processAborts: IFlag[] = [];
 
-  /** App model */
-  public appModel : IAppModel = {
+  /** App model for mandelbrot render */
+  public aMMandel : IAMMandel = {
     centerX : 0,
     centerY : 0,
     zoom : 1
   }
 
-  /** App model - previous state for comparison */
-  private appModelOld : IAppModel = {...this.appModel}
+  /** App model for mandelbrot render - previous state for comparison */
+  private aMMandelOld : IAMMandel = {...this.aMMandel}
+
+  /** */
+  public aMCursor : IAMCursor = {
+    x: 0,
+    y: 0,
+    calcs: []
+  }
 
   /** Active web workers for cancellation */
   private workers : Worker[] = [];
@@ -55,14 +69,14 @@ export class App {
   public drawCanvas(isSkipModelCheck : boolean = false) {
 
     //If the model has not changed, do not render
-    if (!isSkipModelCheck && JSON.stringify(this.appModel) === JSON.stringify(this.appModelOld)) {
+    if (!isSkipModelCheck && JSON.stringify(this.aMMandel) === JSON.stringify(this.aMMandelOld)) {
       return;
     }
 
     //Terminate workers, store current model data as old.
     this.workers.forEach(w => w.terminate());
     this.workers = [];
-    this.appModelOld = {...this.appModel};
+    this.aMMandelOld = {...this.aMMandel};
 
     //Render canvas
     var canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -109,10 +123,10 @@ export class App {
     worker.postMessage({
       width     : width,
       height    : height,
-      centerX   : this.appModel.centerX,
-      centerY   : this.appModel.centerY,
+      centerX   : this.aMMandel.centerX,
+      centerY   : this.aMMandel.centerY,
       pixelSize : pixelSize,
-      zoom      : this.appModel.zoom
+      zoom      : this.aMMandel.zoom
     } as IWorkerEventModel);
 
     worker.onmessage = (event) => {
@@ -133,5 +147,26 @@ export class App {
         height,
         power + 1)
     };
+  }
+
+  /**
+  *   Records a mouse event and store a mandelbrot orbit based on its position
+  *   @param event The mouseover event
+  */
+  public MouseMove(event : MouseEvent) : void {
+    this.aMCursor.x = event.offsetX;
+    this.aMCursor.y = event.offsetY;
+
+    console.log(this.aMCursor.x, this.aMCursor.y);
+
+    //Translate pixel coordinates to mandelbrot set coordinates for calculation
+    var a =   (this.aMCursor.x / 400 - 1) / this.aMMandel.zoom - this.aMMandel.centerX;
+    var b = - (this.aMCursor.y / 400 - 1) / this.aMMandel.zoom - this.aMMandel.centerY;
+
+    //Translate mandelbrot set coordinates back to pixel coordinates, offset by 6 to center dots
+    this.aMCursor.calcs = MandelbrotSequence(a, b, 50).map(c => ({
+      x : ( (this.aMMandel.centerX + c.a) * this.aMMandel.zoom + 1) * 400 - 6, 
+      y : (-(this.aMMandel.centerY + c.b) * this.aMMandel.zoom + 1) * 400 - 6
+    }));
   }
 }

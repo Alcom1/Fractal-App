@@ -1,5 +1,5 @@
 // Complex number interface
-interface IComplex {
+export interface IComplex {
     a: number;  //Real component
     b: number;  //Imaginary component
 }
@@ -13,6 +13,10 @@ export default class Complex implements IComplex {
     // Returns a complex number with real and imaginary components that are 0
     public static get zero() : Complex {
         return new Complex(0, 0);
+    }
+
+    public get get() : Complex {
+        return new Complex(this.a, this.b);
     }
 
     // Returns the square of this complex number

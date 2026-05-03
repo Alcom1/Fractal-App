@@ -4,7 +4,7 @@ import Complex from "./complex";
 *   Peforms a mandelbrot set calculation for a specific (x,y) coordinate.
 *   @param x Real component or horizontal coordinate of complex number
 *   @param y Imaginary component or vertical coordinate of complex number
-*   @param iterations Maximum number of mandelbrot
+*   @param iterations Maximum number of mandelbrot set calculations
 */
 export function MandelbrotFractal(x : number, y : number, iterations: number = 100) : number {
 
@@ -35,4 +35,30 @@ export function MandelbrotFractal(x : number, y : number, iterations: number = 1
     }
 
     return mandelbrotRecurse(zInit);
+}
+
+/**
+*   Records the results of a mandelbrot set calculation for a specific (x,y) coordinate.
+*   @param x Real component or horizontal coordinate of complex number
+*   @param y Imaginary component or vertical coordinate of complex number
+*   @param iterations Number of mandelbrot set calculations
+*/
+export function MandelbrotSequence(x : number, y : number, iterations: number = 10) : Complex[] {
+
+    var c = new Complex(x, y);
+    var z = Complex.zero;
+    var result = [];
+    
+    //Mandelbrot set calculation loop
+    for(var i = 0; i < iterations; i++) {
+        z = z.square.getAdd(c);
+
+        if(Math.abs(z.a) > 2 || Math.abs(z.b) > 2) {
+            return result;
+        }
+
+        result.push(z.get);
+    }
+
+    return result;
 }
