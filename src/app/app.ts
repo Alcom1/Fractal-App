@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { hsvToRgb, IFlag } from './scripts/util';
+import { hsvToRgb, hsvToRgbString, IFlag } from './scripts/util';
 import { IWorkerEventModel, IWorkerResponseModel } from './scripts/mandelbrot_worker';
 import { MandelbrotSequence } from './scripts/mandelbrot';
 
@@ -86,7 +86,7 @@ export class App {
       /** Inverse power of pixel size for the mandelbrot render */
       var power = 6;
 
-      this.renderMandelbrot2(
+      this.renderMandelbrot(
         ctx, 
         canvas.width, 
         canvas.height,
@@ -101,7 +101,7 @@ export class App {
   *   @param height Height of canvas
   *   @returns Promise.
   */
-  private renderMandelbrot2(
+  private renderMandelbrot(
     ctx: CanvasRenderingContext2D, 
     width : number, 
     height : number,
@@ -117,9 +117,7 @@ export class App {
 
     /** Mandebrot worker */
     var worker = new Worker(new URL("scripts/mandelbrot_worker.ts", import.meta.url))
-
     this.workers.push(worker);
-
     worker.postMessage({
       width     : width,
       height    : height,
@@ -129,19 +127,47 @@ export class App {
       zoom      : this.aMMandel.zoom
     } as IWorkerEventModel);
 
+    /** Draw response from mandelbrot worker */
     worker.onmessage = (event) => {
-      (event.data as IWorkerResponseModel[]).forEach(r => {
 
-          var hue = 1 - r.result / 100;
+      /** function to get hsv color from mandelbrot result */
+      function resultToHSV(result : number) : [number, number, number] {
+        return [
+          1 - result / 100,
+          Math.min(1, result / 5 - 1),
+          result < 0 ? 0 : 1 - result / 100
+        ];
+      }
 
-          ctx.fillStyle = hsvToRgb(
-            hue, 
-            Math.min(1, r.result / 5 - 1),
-            r.result < 0 ? 0 : 1 - r.result / 100);
-          ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
-      });
+      //For individual 1x1 pixels, draw per-pixel
+      if(pixelSize == 1) {
+        var imageData = new ImageData(width, height);
+        var data = imageData.data;
 
-      this.renderMandelbrot2(
+        (event.data as IWorkerResponseModel[]).forEach(r => {
+
+            var index = (r.y1 * width + r.x1) * 4;
+            var hue = 1 - r.result / 100;
+            var color = hsvToRgb(...resultToHSV(r.result));
+
+            data[index]     = color[0]; //Red
+            data[index + 1] = color[1]; //Green
+            data[index + 2] = color[2]; //Blue
+            data[index + 3] = 255;      //Alpha
+        });
+
+        ctx.putImageData(imageData, 0, 0);
+      }
+      //For large pixels, draw rectangles
+      else {
+        (event.data as IWorkerResponseModel[]).forEach(r => {
+            ctx.fillStyle = hsvToRgbString(...resultToHSV(r.result));
+            ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
+        });
+      }
+
+      //Reduce pixel size and draw again (until pixels are 1x1)
+      this.renderMandelbrot(
         ctx,
         width,
         height,
@@ -156,8 +182,6 @@ export class App {
   public MouseMove(event : MouseEvent) : void {
     this.aMCursor.x = event.offsetX;
     this.aMCursor.y = event.offsetY;
-
-    console.log(this.aMCursor.x, this.aMCursor.y);
 
     //Translate pixel coordinates to mandelbrot set coordinates for calculation
     var a =   (this.aMCursor.x / 400 - 1) / this.aMMandel.zoom - this.aMMandel.centerX;
