@@ -7,6 +7,8 @@ export interface IWorkerEventModel {
   height : number,
   centerX : number,
   centerY : number,
+  offsetX : number,
+  offsetY : number,
   pixelSize : number,
   zoom: number
 }
@@ -30,7 +32,7 @@ wctx.addEventListener("message", (event) => {
     var results = [] as IWorkerResponseModel[];
 
     //Pixel steps
-    var pixelArray = getPixelArray(data.width, data.pixelSize);
+    var pixelArray = getPixelArray(0, data.width / 2 + 1, data.pixelSize);
 
     //2D Loop for (x, y) pixel coordinates
     //Vertical loop
@@ -45,9 +47,9 @@ wctx.addEventListener("message", (event) => {
 
             /** Result of mandelbrot calculation */
             var result = MandelbrotFractal(
-            (x / data.width - 0.5) * 2 / data.zoom - data.centerX, 
-            (y / data.height - 0.5) * 2 / data.zoom + data.centerY,
-            200 * ((data.zoom - 1) / 64 + 1));
+            ((x + data.offsetX) / data.width - 0.5) * 2 / data.zoom - data.centerX, 
+            ((y + data.offsetY) / data.height - 0.5) * 2 / data.zoom + data.centerY,
+            100 * ((data.zoom - 1) / 32 + 1));
 
             /** Add pixel to results */
             results.push({

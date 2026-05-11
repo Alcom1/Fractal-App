@@ -84,13 +84,20 @@ export class App {
       var ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
       /** Inverse power of pixel size for the mandelbrot render */
-      var power = 6;
+      var power = 4;
 
-      this.renderMandelbrot(
-        ctx, 
-        canvas.width, 
-        canvas.height,
-        power);
+      //Render split into 2x2
+      [0, canvas.width / 2 - 1].forEach(y => {
+        [0, canvas.height / 2 - 1].forEach(x => {
+          this.renderMandelbrot(
+            ctx, 
+            canvas.width, 
+            canvas.height,
+            x,
+            y,
+            power);
+        })
+      })
     }
   }
 
@@ -105,6 +112,8 @@ export class App {
     ctx: CanvasRenderingContext2D, 
     width : number, 
     height : number,
+    offsetX : number,
+    offsetY : number,
     power : number) {
     
     /** Pixel size for the mandelbrot render */
@@ -123,6 +132,8 @@ export class App {
       height    : height,
       centerX   : this.aMMandel.centerX,
       centerY   : this.aMMandel.centerY,
+      offsetX   : offsetX,
+      offsetY   : offsetY,
       pixelSize : pixelSize,
       zoom      : this.aMMandel.zoom
     } as IWorkerEventModel);
@@ -131,11 +142,11 @@ export class App {
     worker.onmessage = (event) => {
 
       /** function to get hsv color from mandelbrot result */
-      function resultToHSV(result : number) : [number, number, number] {
+      function resultToHSV(result : number, zoom : number = 1) : [number, number, number] {
         return [
-          1 - result / 100,
-          Math.min(1, result / 5 - 1),
-          result < 0 ? 0 : 1 - result / 100
+          (Math.log2(result) / 8) % 1 + 1 / 2,
+          Math.min((result - 1) / 10, 1),
+          1 - result / (200 + zoom * 4)
         ];
       }
 
@@ -148,7 +159,7 @@ export class App {
 
             var index = (r.y1 * width + r.x1) * 4;
             var hue = 1 - r.result / 100;
-            var color = hsvToRgb(...resultToHSV(r.result));
+            var color = hsvToRgb(...resultToHSV(r.result, this.aMMandel.zoom));
 
             data[index]     = color[0]; //Red
             data[index + 1] = color[1]; //Green
@@ -156,13 +167,23 @@ export class App {
             data[index + 3] = 255;      //Alpha
         });
 
-        ctx.putImageData(imageData, 0, 0);
+        //Draw mandelbrot to ghost canvas, then transfer it to main canvas.
+        var ghostCanvas = document.createElement('canvas') as HTMLCanvasElement;
+        ghostCanvas.width = width / 2;
+        ghostCanvas.height = height / 2;
+        var ctx2 = ghostCanvas.getContext('2d') as CanvasRenderingContext2D;
+        ctx2.putImageData(imageData, 0, 0);
+        ctx.drawImage(ghostCanvas, offsetX, offsetY);
       }
       //For large pixels, draw rectangles
       else {
         (event.data as IWorkerResponseModel[]).forEach(r => {
-            ctx.fillStyle = hsvToRgbString(...resultToHSV(r.result));
-            ctx.fillRect(r.x1, r.y1, r.x2, r.y2);
+            ctx.fillStyle = hsvToRgbString(...resultToHSV(r.result, this.aMMandel.zoom));
+            ctx.fillRect(
+              r.x1 + offsetX, 
+              r.y1 + offsetY, 
+              r.x2, 
+              r.y2);
         });
       }
 
@@ -171,6 +192,8 @@ export class App {
         ctx,
         width,
         height,
+        offsetX,
+        offsetY,
         power + 1)
     };
   }

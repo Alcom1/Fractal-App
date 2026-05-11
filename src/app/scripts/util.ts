@@ -3,15 +3,16 @@ export interface IFlag {
 }
 /**
 *   Utility function for generating crisp integer-sized pixels based on the width-space occupied and size of the pixels.
-*   @param width Width of the space occupied by the pixels.
+*   @param start starting value for left/top most pixel
+*   @param end ending value for right/bottom most pixel
 *   @param size Average width and height of the pixels.
 *   @returns a 1D array representing the coordinate steps of each pixel.
 */
-export function getPixelArray(width: number, size: number) : number[] {
-    var i = 0;
+export function getPixelArray(start: number, end: number, size: number) : number[] {
+    var i = start;
     var result: number[] = [];
 
-    while (i < width && i >= 0) {
+    while (i < end && i >= 0) {
         result.push(i);
 
         i = Math.floor(i + size);

@@ -12,6 +12,11 @@ export function MandelbrotFractal(x : number, y : number, iterations: number = 1
     var zInit = Complex.zero;
     var i = 0;
 
+    //Inside main cardioid
+    if((8 * c.absSquared - 1.5)**2 + 8 * x < 3) {
+        return -1;
+    }
+
     //Recursively calculate mandlebrot until the value is OOB or out of iterations.
     function mandelbrotRecurse(z : Complex) : number {
 
@@ -21,10 +26,6 @@ export function MandelbrotFractal(x : number, y : number, iterations: number = 1
         }
         //Maximum iterations reached
         if(i >= iterations) {
-            return -1;
-        }
-        //Inside main cardioid
-        if((8 * c.absSquared - 1.5)**2 + 8 * x < 3) {
             return -1;
         }
 
